@@ -2,332 +2,519 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <title>Trig Synth Warrior</title>
-  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>KPルーレット</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+  <style>
+    /* ルーレット本体の回転アニメーション用クラス */
+    .roulette-spin {
+      transition: transform 5s cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+    
+    /* モーダルや結果表示のフェードアニメーション用 */
+    .fade-overlay {
+      transition: opacity 0.3s ease, backdrop-filter 0.3s ease;
+    }
+    .fade-content {
+      transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); /* 弾むようなポップアップ */
+    }
+    .hidden-state-overlay { opacity: 0; pointer-events: none; }
+    .hidden-state-content { opacity: 0; transform: scale(0.85); pointer-events: none; }
+    
+    /* スクロールバーのカスタマイズ（設定画面のリスト用） */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+  </style>
+</head>
+<body class="min-h-screen bg-slate-900 text-slate-100 font-sans flex flex-col items-center justify-center relative overflow-hidden bg-cover bg-center bg-no-repeat" style="background-image: url('https://cdn.jsdelivr.net/gh/kinoshitatomofumi62/my-assets@main/aaaa.png');">
   
-  <!-- Image Preloads (画像のチラつきと遅延を防止) -->
-  <link rel="preload" as="image" href="https://cdn.jsdelivr.net/gh/kinoshitatomofumi62/my-assets@main/aae0.png">
-  <link rel="preload" as="image" href="https://cdn.jsdelivr.net/gh/kinoshitatomofumi62/my-assets@main/aae1.png">
-  <link rel="preload" as="image" href="https://cdn.jsdelivr.net/gh/kinoshitatomofumi62/my-assets@main/aae2.png">
-  <link rel="preload" as="image" href="https://cdn.jsdelivr.net/gh/kinoshitatomofumi62/my-assets@main/aae3.png">
-  <link rel="preload" as="image" href="https://cdn.jsdelivr.net/gh/kinoshitatomofumi62/my-assets@main/aae4.png">
-  <link rel="preload" as="image" href="https://cdn.jsdelivr.net/gh/kinoshitatomofumi62/my-assets@main/aae5.png">
+  <!-- 背景を少し暗く落とすオーバーレイ（ぼかしなし） -->
+  <div class="absolute inset-0 bg-black/20 z-0 pointer-events-none"></div>
+
+  <!-- ヘッダー＆設定ボタンエリア -->
+  <header class="absolute top-4 left-4 md:top-6 md:left-6 z-10 pointer-events-auto">
+    <h1 class="text-xl md:text-2xl font-extrabold tracking-tight text-white flex items-center gap-2 drop-shadow-lg">
+      🎯 KPルーレット
+    </h1>
+  </header>
+  <button id="openSettingsBtn" class="absolute top-4 right-4 md:top-6 md:right-6 p-3 bg-white/10 backdrop-blur-md rounded-full text-white hover:bg-white/20 border border-white/20 shadow-lg transition-all hover:scale-105 active:scale-95 z-10 pointer-events-auto">
+    <!-- Settings Icon -->
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+  </button>
+
+  <!-- メインルーレットエリア -->
+  <div class="w-full max-w-md flex flex-col items-center justify-center z-10 mt-12 md:mt-0 flex-1 relative pointer-events-auto">
+    <div class="relative w-full aspect-square drop-shadow-2xl my-4 flex items-center justify-center">
+      <!-- 針（ポインター） -->
+      <div class="absolute top-0 left-1/2 -translate-x-1/2 -mt-6 z-20 transition-transform">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor" class="text-white drop-shadow-xl filter">
+          <path d="M12 24L0 0h24z" />
+        </svg>
+      </div>
+
+      <!-- ルーレット本体 -->
+      <div id="rouletteContainer" class="w-full h-full absolute inset-0 roulette-spin" style="transform: rotate(0deg);">
+        <svg id="rouletteSvg" viewBox="0 0 100 100" class="w-full h-full rounded-full overflow-hidden shrink-0 border-4 border-white/40 bg-black/20 shadow-2xl backdrop-blur-sm">
+          <!-- 盤面要素はJavaScriptで描画 -->
+        </svg>
+      </div>
+
+      <!-- 中心軸とスタートボタン -->
+      <div class="relative w-24 h-24 bg-white/20 backdrop-blur-md rounded-full flex flex-col items-center justify-center shadow-2xl border-4 border-white/30 z-30">
+        <button id="spinBtn" class="w-full h-full rounded-full flex items-center justify-center hover:scale-105 active:scale-95 transition-all outline-none focus:ring-4 focus:ring-white/50">
+          <!-- Play Icon -->
+          <svg class="w-10 h-10 ml-2 fill-white text-white drop-shadow-md" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="5 3 19 12 5 21 5 3"></polygon>
+          </svg>
+        </button>
+      </div>
+
+      <!-- 結果表示オーバーレイ -->
+      <div id="resultModalOverlay" class="absolute inset-0 z-40 flex items-center justify-center fade-overlay hidden-state-overlay bg-black/40 backdrop-blur-[4px] rounded-full">
+        <!-- Card -->
+        <div id="resultModalContent" class="relative p-6 bg-white/10 backdrop-blur-md border border-white/20 rounded-3xl w-[85%] text-center shadow-2xl flex flex-col items-center fade-content hidden-state-content">
+          <div class="text-white/80 text-xs font-bold uppercase tracking-wider mb-2 flex items-center justify-center gap-1.5 drop-shadow-sm">
+            <!-- Trophy Icon -->
+            <svg class="w-4 h-4 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"></path><path d="M4 22h16"></path><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"></path><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"></path><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"></path></svg>
+            Winner
+          </div>
+          <div id="resultName" class="text-4xl font-extrabold text-white drop-shadow-lg mb-3 line-clamp-2"></div>
+          <div id="resultChance" class="text-white/90 text-xs font-bold mb-5 bg-black/30 px-3 py-1.5 rounded-full border border-white/10 shadow-inner"></div>
+
+          <div class="w-full flex gap-2">
+            <button id="closeResultBtn" class="flex-1 h-11 rounded-xl bg-white/10 border border-white/20 text-white font-bold flex items-center justify-center hover:bg-white/20 active:scale-95 transition-all text-xs shadow-md backdrop-blur-sm">
+              閉じる
+            </button>
+            <button id="spinAgainBtn" class="flex-[2] h-11 rounded-xl bg-white text-slate-900 font-bold flex items-center justify-center gap-1.5 hover:bg-slate-200 active:scale-95 transition-all shadow-xl text-xs">
+               <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+               連続スタート
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 設定モーダル全体 -->
+  <div id="settingsArea" class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 pointer-events-none">
+    <!-- バックドロップ -->
+    <div id="settingsBackdrop" class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm fade-overlay hidden-state-overlay pointer-events-auto"></div>
+    
+    <!-- モーダルコンテンツ -->
+    <div id="settingsModal" class="relative bg-slate-50 rounded-3xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden z-10 fade-content hidden-state-content pointer-events-auto text-slate-900">
+      
+      <!-- ヘッダー -->
+      <div class="flex items-center justify-between p-4 sm:p-6 border-b border-slate-200 bg-white shadow-sm z-10">
+        <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+          <!-- Settings2 Icon -->
+          <svg class="w-5 h-5 text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7h-9"></path><path d="M14 17H5"></path><circle cx="17" cy="17" r="3"></circle><circle cx="7" cy="7" r="3"></circle></svg>
+          設定・選択肢の管理
+        </h2>
+        <button id="closeSettingsBtn" class="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-full transition-colors">
+          <!-- X Icon -->
+          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+
+      <!-- メインボディ -->
+      <div class="overflow-y-auto p-4 sm:p-6 space-y-6 flex-1">
+        
+        <!-- 減衰モード トグルスイッチ -->
+        <div id="decayToggleBtn" class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-start justify-between cursor-pointer group hover:border-slate-300 transition-all select-none">
+          <div class="pr-4">
+            <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2">減衰（ドロップアウト）モード</h3>
+            <p class="text-xs text-slate-500 mt-2 font-medium leading-relaxed">
+              ONにすると、当選した選択肢の割合（重み）が 自動的に「1」減ります。<br/>
+              0になった選択肢は消去され、残りの確率が再計算されます。
+            </p>
+          </div>
+          <div id="decayToggleBg" class="mt-1 relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors bg-slate-300">
+             <span id="decayToggleKnob" class="inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform translate-x-1"></span>
+          </div>
+        </div>
+
+        <!-- 選択肢と割合の管理リスト -->
+        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+          <div class="flex text-[11px] font-bold text-slate-400 px-2 pb-2 border-b border-slate-100 mb-3 tracking-wider uppercase">
+            <div class="flex-1">アイテム名</div>
+            <div class="w-16 text-center">重み</div>
+            <div class="w-16 text-center">確率</div>
+            <div class="w-8"></div>
+          </div>
+          
+          <div id="itemListContainer" class="space-y-2 max-h-[40vh] overflow-y-auto pr-1">
+             <!-- アイテムリストはJSで描画 -->
+          </div>
+
+          <!-- 追加フォーム -->
+          <form id="addItemForm" class="mt-4 pt-4 border-t border-slate-100 flex gap-2">
+            <input id="newItemName" type="text" placeholder="項目名" required class="flex-1 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400 disabled:bg-slate-50 w-full" />
+            <input id="newItemWeight" type="number" min="1" value="10" required class="w-16 border border-slate-200 rounded-xl px-1 py-2 text-sm text-center focus:outline-none focus:ring-2 focus:ring-slate-400 disabled:bg-slate-50" />
+            <button type="submit" class="px-3 py-2 bg-slate-800 text-white rounded-xl text-sm font-bold flex items-center gap-1 hover:bg-slate-700 disabled:opacity-50 transition-colors shrink-0">
+               <!-- Plus Icon -->
+               <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg> 
+               追加
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <script>
-    window.MathJax = {
-      tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] },
-      chtml: { fontURL: 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/output/chtml/fonts/woff-v2' },
-      startup: { typeset: false }
-    };
-  </script>
-  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-  
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    /* ==============================
+       定数・初期状態・ユーティリティ
+       ============================== */
+    const COLORS = [
+      '#EF4444', '#3B82F6', '#10B981', '#F59E0B',
+      '#8B5CF6', '#EC4899', '#06B6D4', '#84CC16',
+      '#F97316', '#6366F1'
+    ];
+    
+    const generateId = () => Date.now().toString(36) + Math.random().toString(36).substring(2);
 
-  <style>
-    body {
-      font-family: 'Press Start 2P', cursive;
-      background-color: #050505; color: #e0e0e0;
-      overflow: hidden; touch-action: manipulation; user-select: none; -webkit-user-select: none;
-    }
-    .scanlines::before {
-      content: " "; display: block; position: absolute; top: 0; left: 0; bottom: 0; right: 0;
-      background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
-      z-index: 50; background-size: 100% 2px, 3px 100%; pointer-events: none;
-    }
-  </style>
-
-  <script type="importmap">
-  {
-    "imports": {
-      "react": "https://esm.sh/react@18.2.0",
-      "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
-      "lucide-react": "https://esm.sh/lucide-react@0.263.1?deps=react@18.2.0"
-    }
-  }
-  </script>
-</head>
-<body>
-  <div id="root"></div>
-
-  <script type="text/babel" data-type="module">
-    import React, { useState, useEffect, useRef, useCallback, memo } from 'react';
-    import { createRoot } from 'react-dom/client';
-    import { Heart, RefreshCw, Frown, Clock, Plus, Minus, Play, Trophy, Star, Delete, CornerDownLeft } from 'lucide-react';
-
-    const GamePhase = { START: 'START', PLAYING: 'PLAYING', VICTORY: 'VICTORY', GAME_OVER: 'GAME_OVER' };
-
-    const ASSETS = {
-      NORMAL: "https://cdn.jsdelivr.net/gh/kinoshitatomofumi62/my-assets@main/aae0.png",
-      ATTACK: "https://cdn.jsdelivr.net/gh/kinoshitatomofumi62/my-assets@main/aae2.png", 
-      HIT: "https://cdn.jsdelivr.net/gh/kinoshitatomofumi62/my-assets@main/aae1.png",    
-      DEFEAT: "https://cdn.jsdelivr.net/gh/kinoshitatomofumi62/my-assets@main/aae3.png", 
-      WIN_MISS: "https://cdn.jsdelivr.net/gh/kinoshitatomofumi62/my-assets@main/aae4.png", 
-      WIN_PERFECT: "https://cdn.jsdelivr.net/gh/kinoshitatomofumi62/my-assets@main/aae5.png",
-    };
-
-    const BASE_TEMPLATES = [
-      { a: 1, aLatex: "", b: 1, bLatex: "", rBase: Math.SQRT2, alphaLabel: "\\frac{\\pi}{4}", alphaSign: 1 },
-      { a: 1, aLatex: "", b: -1, bLatex: "-", rBase: Math.SQRT2, alphaLabel: "\\frac{\\pi}{4}", alphaSign: -1 },
-      { a: -1, aLatex: "-", b: 1, bLatex: "", rBase: Math.SQRT2, alphaLabel: "\\frac{3\\pi}{4}", alphaSign: 1 },
-      { a: -1, aLatex: "-", b: -1, bLatex: "-", rBase: Math.SQRT2, alphaLabel: "\\frac{3\\pi}{4}", alphaSign: -1 },
-      { a: Math.sqrt(3), aLatex: "\\sqrt{3}", b: 1, bLatex: "", rBase: 2, alphaLabel: "\\frac{\\pi}{6}", alphaSign: 1 },
-      { a: 1, aLatex: "", b: Math.sqrt(3), bLatex: "\\sqrt{3}", rBase: 2, alphaLabel: "\\frac{\\pi}{3}", alphaSign: 1 },
-      { a: Math.sqrt(3), aLatex: "\\sqrt{3}", b: -1, bLatex: "-", rBase: 2, alphaLabel: "\\frac{\\pi}{6}", alphaSign: -1 },
-      { a: 1, aLatex: "", b: -Math.sqrt(3), bLatex: "-\\sqrt{3}", rBase: 2, alphaLabel: "\\frac{\\pi}{3}", alphaSign: -1 },
-      { a: -Math.sqrt(3), aLatex: "-\\sqrt{3}", b: 1, bLatex: "", rBase: 2, alphaLabel: "\\frac{5\\pi}{6}", alphaSign: 1 },
-      { a: -1, aLatex: "-", b: Math.sqrt(3), bLatex: "\\sqrt{3}", rBase: 2, alphaLabel: "\\frac{2\\pi}{3}", alphaSign: 1 },
-      { a: -Math.sqrt(3), aLatex: "-\\sqrt{3}", b: -1, bLatex: "-", rBase: 2, alphaLabel: "\\frac{5\\pi}{6}", alphaSign: -1 },
-      { a: -1, aLatex: "-", b: -Math.sqrt(3), bLatex: "-\\sqrt{3}", rBase: 2, alphaLabel: "\\frac{2\\pi}{3}", alphaSign: -1 },
+    let items = [
+      { id: generateId(), name: 'A', weight: 10, color: COLORS[0] },
+      { id: generateId(), name: 'B', weight: 10, color: COLORS[1] },
+      { id: generateId(), name: 'C', weight: 10, color: COLORS[2] },
+      { id: generateId(), name: 'D', weight: 10, color: COLORS[3] },
     ];
 
-    const ALPHA_CHOICES = [
-      { label: "\\frac{\\pi}{6}" }, { label: "\\frac{\\pi}{4}" }, { label: "\\frac{\\pi}{3}" },
-      { label: "\\frac{2\\pi}{3}" }, { label: "\\frac{3\\pi}{4}" }, { label: "\\frac{5\\pi}{6}" },
-    ];
-
-    const generateProblem = () => {
-      const template = BASE_TEMPLATES[Math.floor(Math.random() * BASE_TEMPLATES.length)];
-      const scale = Math.floor(Math.random() * 3) + 1;
-
-      const formatTerm = (baseLatex, isFirst, val) => {
-          let s = "";
-          const isNeg = val < 0;
-          if (isFirst) { if (isNeg) s += "-"; } else { s += isNeg ? " - " : " + "; }
-          if (["", "-", "-\\sqrt{3}", "\\sqrt{3}"].includes(baseLatex)) {
-              if (baseLatex.includes("sqrt")) { if (scale > 1) s += scale; s += "\\sqrt{3}"; }
-              else { if (scale > 1) s += scale; }
-          }
-          return s;
+    let decayMode = false;
+    let isSpinning = false;
+    let rotation = 0;
+    
+    // SVG描画用の三角関数ヘルパー
+    const polarToCartesian = (cx, cy, r, angleInDegrees) => {
+      const angleInRadians = (angleInDegrees - 90) * Math.PI / 180.0;
+      return {
+        x: cx + r * Math.cos(angleInRadians),
+        y: cy + r * Math.sin(angleInRadians)
       };
+    };
 
-      let latexA = formatTerm(template.aLatex, true, template.a);
-      let latexB = formatTerm(template.bLatex, false, template.b);
-      let problemLatex = `${latexA}\\sin\\theta${latexB}\\cos\\theta`;
+    const createPiePath = (startAngle, endAngle) => {
+      if (endAngle - startAngle >= 359.9) {
+        return "M 50, 50 m -50, 0 a 50,50 0 1,0 100,0 a 50,50 0 1,0 -100,0";
+      }
+      const start = polarToCartesian(50, 50, 50, endAngle);
+      const end = polarToCartesian(50, 50, 50, startAngle);
+      const largeArcFlag = endAngle - startAngle <= 180 ? "0" : "1";
+      return `M 50 50 L ${start.x} ${start.y} A 50 50 0 ${largeArcFlag} 0 ${end.x} ${end.y} Z`;
+    };
+
+    /* ==============================
+       DOM要素の取得
+       ============================== */
+    const rouletteContainer = document.getElementById('rouletteContainer');
+    const rouletteSvg = document.getElementById('rouletteSvg');
+    const spinBtn = document.getElementById('spinBtn');
+    
+    // Result Modal
+    const resultModalOverlay = document.getElementById('resultModalOverlay');
+    const resultModalContent = document.getElementById('resultModalContent');
+    const resultName = document.getElementById('resultName');
+    const resultChance = document.getElementById('resultChance');
+    const closeResultBtn = document.getElementById('closeResultBtn');
+    const spinAgainBtn = document.getElementById('spinAgainBtn');
+    
+    // Settings Modal
+    const settingsArea = document.getElementById('settingsArea');
+    const settingsBackdrop = document.getElementById('settingsBackdrop');
+    const settingsModal = document.getElementById('settingsModal');
+    const openSettingsBtn = document.getElementById('openSettingsBtn');
+    const closeSettingsBtn = document.getElementById('closeSettingsBtn');
+    
+    // Settings Contents
+    const decayToggleBtn = document.getElementById('decayToggleBtn');
+    const decayToggleBg = document.getElementById('decayToggleBg');
+    const decayToggleKnob = document.getElementById('decayToggleKnob');
+    const itemListContainer = document.getElementById('itemListContainer');
+    const addItemForm = document.getElementById('addItemForm');
+    const newItemName = document.getElementById('newItemName');
+    const newItemWeight = document.getElementById('newItemWeight');
+
+    /* ==============================
+       状態更新とレンダリング関数
+       ============================== */
+    const getTotalWeight = () => items.reduce((sum, item) => sum + item.weight, 0);
+
+    const renderRoulette = () => {
+      const totalWeight = getTotalWeight();
+      rouletteSvg.innerHTML = ''; // クリア
+
+      if (totalWeight <= 0) {
+        rouletteSvg.innerHTML = `
+          <foreignObject x="0" y="0" width="100" height="100">
+            <div xmlns="http://www.w3.org/1999/xhtml" class="w-full h-full flex items-center justify-center text-white/50 font-bold text-center" style="font-size: 10px;">
+              選択肢なし
+            </div>
+          </foreignObject>`;
+        spinBtn.style.opacity = '0.3';
+        return;
+      }
       
-      let correctR = Math.abs(template.rBase - 2) < 0.01 ? (2 * scale).toString() : (scale === 1 ? "" : scale.toString()) + "\\sqrt{2}";
-      const correctAlpha = (template.alphaSign === 1 ? "+" : "-") + template.alphaLabel;
+      spinBtn.style.opacity = '1';
+      let currentAngle = 0;
 
-      return { id: Math.random().toString(36).substring(7), latex: problemLatex, correctR, correctAlpha };
-    };
+      items.forEach((item) => {
+        const sliceAngle = (item.weight / totalWeight) * 360;
+        const startAngle = currentAngle;
+        const endAngle = currentAngle + sliceAngle;
+        currentAngle = endAngle;
 
-    const evaluateInput = (inputR, inputOperator, inputAlpha, problem) => {
-      let r = inputR.replace(/\s/g, ''); 
-      if (r.startsWith("1\\sqrt")) r = r.substring(1);
-      if (!inputAlpha) return false;
-      return r === problem.correctR && (inputOperator + inputAlpha) === problem.correctAlpha;
-    };
+        const angle = endAngle - startAngle;
+        const midAngle = startAngle + angle / 2;
+        const shouldDrawText = angle > 3;
 
-    const MathLabel = memo(({ latex, className, displayMode = false }) => {
-      const containerRef = useRef(null);
-      useEffect(() => {
-        if (containerRef.current && window.MathJax) {
-          containerRef.current.innerHTML = displayMode ? `\\[${latex}\\]` : `\\(${latex}\\)`;
-          window.MathJax.typesetPromise([containerRef.current]).catch(err => console.error(err));
+        // 【仕様 3】文字数に対する文字サイズの動的計算
+        const textRadius = 30;
+        const textPos = polarToCartesian(50, 50, textRadius, midAngle);
+        const textTransform = `rotate(${midAngle + 90}, ${textPos.x}, ${textPos.y})`;
+
+        const arcLength = (angle / 180) * Math.PI * textRadius;
+        const textLen = Math.max(1, item.name.length);
+        const calculatedFontSize = arcLength / textLen;
+        const maxFontSize = Math.min(10, 24 / textLen);
+        const fontSize = Math.max(1.5, Math.min(calculatedFontSize, maxFontSize));
+
+        // SVGの組み立て
+        const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('d', createPiePath(startAngle, endAngle));
+        path.setAttribute('fill', item.color);
+        path.setAttribute('stroke', '#ffffff');
+        path.setAttribute('stroke-width', '0.5');
+        g.appendChild(path);
+
+        if (shouldDrawText) {
+          const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+          text.setAttribute('x', textPos.x);
+          text.setAttribute('y', textPos.y);
+          text.setAttribute('fill', '#ffffff');
+          text.setAttribute('font-size', fontSize.toFixed(2));
+          text.setAttribute('font-weight', '800');
+          text.setAttribute('text-anchor', 'middle');
+          text.setAttribute('alignment-baseline', 'middle');
+          text.setAttribute('transform', textTransform);
+          text.setAttribute('class', 'pointer-events-none drop-shadow-lg filter font-black');
+          text.style.textShadow = "1px 1px 2px rgba(0,0,0,0.8)";
+          text.textContent = item.name;
+          g.appendChild(text);
         }
-      }, [latex, displayMode]);
-      return <div ref={containerRef} className={className} />;
-    });
-
-    const MonsterDisplay = memo(({ state, className }) => {
-      let src = ASSETS.NORMAL;
-      let animClass = "animate-[float_3s_ease-in-out_infinite]";
-      
-      if (state === 'hit') { src = ASSETS.HIT; animClass = "animate-[shake_0.5s] brightness-150"; }
-      else if (state === 'attack') { src = ASSETS.ATTACK; animClass = "animate-[lunge_0.3s_ease-in-out]"; }
-      else if (state === 'dead') { animClass = "opacity-50 grayscale"; }
-
-      return (
-        <div className={`relative flex justify-center items-center ${className || ''}`}>
-          <img src={src} alt="Monster" className={`w-full h-full object-contain drop-shadow-[0_0_15px_rgba(0,188,212,0.4)] transition-all duration-200 ${animClass}`} />
-          <style>{`
-            @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
-            @keyframes lunge { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.2) translateY(20px); } }
-            @keyframes shake { 0%, 30%, 60%, 90% { transform: translate(2px, 1px) rotate(1deg); } 10%, 40%, 70%, 100% { transform: translate(-2px, -1px) rotate(-1deg); } }
-          `}</style>
-        </div>
-      );
-    });
-
-    const Keypad = ({ mode, onPress, onDelete, onSubmit }) => {
-      const btnClass = "bg-gray-800 border-2 border-cyan-700 text-cyan-400 font-bold p-0.5 active:bg-cyan-900 active:border-cyan-400 rounded shadow-[0_0_5px_rgba(0,188,212,0.2)] flex items-center justify-center cursor-pointer";
-      const numBtn = `${btnClass} text-lg h-10`; 
-      const alphaBtn = `${btnClass} h-11`; 
-
-      if (mode === 'r') {
-        return (
-          <div className="grid grid-cols-4 gap-1 p-0.5 max-w-sm mx-auto w-full">
-            {['7','8','9'].map(n => <button key={n} className={numBtn} onClick={() => onPress(n)}>{n}</button>)}
-            <button className={`${numBtn} text-red-400 border-red-600`} onClick={onDelete}><Delete size={18} /></button>
-            {['4','5','6'].map(n => <button key={n} className={numBtn} onClick={() => onPress(n)}>{n}</button>)}
-            <button className={`${numBtn} bg-cyan-900 text-white border-cyan-400`} onClick={onSubmit}><CornerDownLeft size={18} /></button>
-            {['1','2','3'].map(n => <button key={n} className={numBtn} onClick={() => onPress(n)}>{n}</button>)}
-            <button className={`${numBtn} text-yellow-400 border-yellow-600 text-sm`} onClick={() => onPress('\\sqrt{2}')}>√2</button>
-            <button className={`${numBtn} text-yellow-400 border-yellow-600 text-sm`} onClick={() => onPress('\\sqrt{3}')}>√3</button>
-            <div className="col-span-3 grid grid-cols-3 gap-1">
-               <button className={`${numBtn} col-start-2`} onClick={() => onPress('0')}>0</button>
-            </div>
-          </div>
-        );
-      }
-      return (
-        <div className="grid grid-cols-3 gap-1.5 p-0.5 max-w-sm mx-auto w-full">
-          {ALPHA_CHOICES.map(c => (
-            <button key={c.label} className={alphaBtn} onClick={() => onPress(c.label)}>
-               <MathLabel latex={c.label} className="pointer-events-none scale-75 origin-center" />
-            </button>
-          ))}
-          <button className={`${alphaBtn} text-red-400 border-red-600`} onClick={onDelete}><Delete size={18} /></button>
-          <div className="flex items-center justify-center text-gray-600 text-[10px]">SELECT</div>
-          <button className={`${alphaBtn} bg-cyan-900 text-white border-cyan-400`} onClick={onSubmit}><CornerDownLeft size={18} /></button>
-        </div>
-      );
+        rouletteSvg.appendChild(g);
+      });
     };
 
-    const App = () => {
-      const [gs, setGs] = useState({ phase: GamePhase.START, currentStage: 1, hp: 2, score: 0, timeLeft: 30, totalMistakes: 0, history: [] });
-      const [curProb, setCurProb] = useState(null);
-      const [inputR, setInputR] = useState(''); const [inputOp, setInputOp] = useState('+'); const [inputAlpha, setInputAlpha] = useState('');
-      const [activeFld, setActiveFld] = useState('r');
-      const [mState, setMState] = useState('idle'); const [fb, setFb] = useState('none'); const [shake, setShake] = useState(false);
-      const timerRef = useRef(null);
+    const renderSettingsList = () => {
+      const totalWeight = getTotalWeight();
+      itemListContainer.innerHTML = '';
 
-      const stopTimer = useCallback(() => { clearInterval(timerRef.current); }, []);
+      if (items.length === 0) {
+        itemListContainer.innerHTML = `
+          <div class="text-center py-6 text-slate-400 flex flex-col items-center gap-2 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+            <svg class="w-6 h-6 opacity-50" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+            <span class="font-medium text-xs">選択肢がありません</span>
+          </div>`;
+        return;
+      }
 
-      const nextLvl = useCallback(() => {
-        setCurProb(generateProblem()); setInputR(''); setInputOp('+'); setInputAlpha(''); setActiveFld('r'); setFb('none');
-        stopTimer(); setGs(p => ({ ...p, timeLeft: 30 }));
-        timerRef.current = setInterval(() => {
-          setGs(p => {
-            if(p.phase !== GamePhase.PLAYING) return p;
-            if(p.timeLeft <= 1) { handleWrong(true); return { ...p, timeLeft: 0 }; }
-            return { ...p, timeLeft: p.timeLeft - 1 };
-          });
-        }, 1000);
-      }, [stopTimer]);
+      items.forEach(item => {
+        const prob = totalWeight > 0 ? ((item.weight / totalWeight) * 100).toFixed(1) : 0;
+        
+        const row = document.createElement('div');
+        row.className = 'flex gap-2 items-center group bg-slate-50 p-2 rounded-xl border border-transparent hover:border-slate-200 transition-colors';
+        row.innerHTML = `
+          <div class="w-3 h-3 rounded-full shrink-0 shadow-sm" style="background-color: ${item.color}"></div>
+          <div class="flex-1 font-bold text-slate-700 truncate text-sm">${item.name}</div>
+          <div class="w-16">
+            <input type="number" min="0" value="${item.weight}" data-id="${item.id}" class="weight-input w-full bg-white border border-slate-200 rounded-lg px-1 py-1 text-center font-mono text-xs focus:outline-none focus:ring-2 focus:ring-slate-400" ${isSpinning ? 'disabled' : ''} />
+          </div>
+          <div class="w-16 text-center font-mono text-xs font-medium text-slate-500">${prob}%</div>
+          <button data-id="${item.id}" class="remove-btn w-8 h-8 flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors shrink-0" ${isSpinning ? 'disabled' : ''}>
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
+          </button>
+        `;
+        itemListContainer.appendChild(row);
+      });
 
-      const start = useCallback(() => {
-        setGs({ phase: GamePhase.PLAYING, currentStage: 1, hp: 2, score: 0, timeLeft: 30, totalMistakes: 0, history: [] });
-        setMState('idle'); setFb('none'); nextLvl();
-      }, [nextLvl]);
-
-      useEffect(() => { return stopTimer; }, [stopTimer]);
-      useEffect(() => { Object.values(ASSETS).forEach(src => { const img = new Image(); img.src = src; }); }, []);
-      useEffect(() => { if(gs.hp <= 0 && gs.phase === GamePhase.PLAYING) { stopTimer(); setGs(p => ({ ...p, phase: GamePhase.GAME_OVER })); } }, [gs.hp, gs.phase, stopTimer]);
-
-      const handleWrong = (isTO) => {
-        setFb(isTO ? 'timeout' : 'wrong'); setMState('attack'); setShake(true);
-        setGs(p => {
-            const hist = curProb ? [...p.history, { prob: curProb, uR: inputR||'?', uOp: inputOp, uA: inputAlpha||'?', res: isTO?'timeout':'wrong' }] : p.history;
-            return { ...p, totalMistakes: p.totalMistakes + 1, history: hist };
+      // イベントリスナーの再付与
+      document.querySelectorAll('.weight-input').forEach(input => {
+        input.addEventListener('change', (e) => {
+          const id = e.target.getAttribute('data-id');
+          const val = parseInt(e.target.value, 10) || 0;
+          items = items.map(i => i.id === id ? { ...i, weight: val } : i);
+          renderApp();
         });
-        setTimeout(() => {
-          setShake(false); setMState('idle'); setFb('none');
-          setGs(p => {
-            const h = p.hp - 1; if(h <= 0) { stopTimer(); return { ...p, hp: 0, phase: GamePhase.GAME_OVER }; }
-            if(isTO) {
-              stopTimer(); timerRef.current = setInterval(() => setGs(prev => prev.timeLeft <= 1 ? (handleWrong(true), { ...prev, timeLeft: 0 }) : { ...prev, timeLeft: prev.timeLeft - 1 }), 1000);
-            }
-            return { ...p, hp: h, timeLeft: 30 };
-          });
-        }, 1000);
-      };
+      });
 
-      const checkAns = () => {
-        if(!curProb || gs.phase !== GamePhase.PLAYING || fb !== 'none') return;
-        if(evaluateInput(inputR, inputOp, inputAlpha, curProb)) {
-          stopTimer(); setFb('correct'); setMState('hit');
-          setGs(p => ({ ...p, score: p.score + 100 + (p.timeLeft*10) }));
-          setTimeout(() => {
-            if(gs.currentStage >= 5) setGs(p => ({ ...p, phase: GamePhase.VICTORY }));
-            else { setMState('idle'); setGs(p => ({ ...p, currentStage: p.currentStage + 1 })); nextLvl(); }
-          }, 1500);
-        } else handleWrong(false);
-      };
-
-      const hPress = v => { if(gs.phase===GamePhase.PLAYING){ if(activeFld==='r') setInputR(p=>p+v); else setInputAlpha(v); } };
-      const hDel = () => { if(gs.phase===GamePhase.PLAYING){ if(activeFld==='r') setInputR(p=>p.slice(0,-1)); else setInputAlpha(''); } };
-
-      if(gs.phase === GamePhase.START) return (
-        <div className="fixed inset-0 h-[100dvh] bg-black text-white flex flex-col items-center justify-center p-4 scanlines">
-          <h1 className="text-3xl md:text-6xl text-cyan-400 mb-6 neon-blue font-bold tracking-tighter text-center">TRIG<br/>SYNTH<br/>WARRIOR</h1>
-          <div className="bg-gray-900 border-2 border-cyan-600 p-4 md:p-6 rounded-lg max-w-md w-full text-center shadow-[0_0_20px_rgba(0,188,212,0.4)] z-10">
-            <p className="mb-4 text-xs text-cyan-200"><span className="text-yellow-400">sin</span> と <span className="text-yellow-400">cos</span> を合成してバグモンスターを撃破せよ</p>
-            <div className="text-[10px] text-left mb-6 space-y-2 bg-black p-3 rounded">
-               <div className="flex gap-1"><span>1.</span><MathLabel latex="a \sin \theta + b \cos \theta"/><span className="ml-1">を変形</span></div>
-               <div className="flex gap-1"><span>2.</span><span className="ml-1">目標:</span><MathLabel latex="r \sin(\theta \pm \alpha)"/></div>
-            </div>
-            <button onClick={start} className="w-full bg-cyan-700 text-white font-bold py-3 rounded border-b-4 border-cyan-900 flex items-center justify-center gap-2"><Play size={20}/> START</button>
-          </div>
-        </div>
-      );
-
-      if(gs.phase === GamePhase.VICTORY || gs.phase === GamePhase.GAME_OVER) {
-        const perf = gs.phase === GamePhase.VICTORY && gs.totalMistakes === 0;
-        return (
-          <div className="fixed inset-0 h-[100dvh] bg-black flex flex-col items-center p-4 scanlines overflow-y-auto">
-            <div className="w-full max-w-2xl flex flex-col items-center z-10 py-4">
-              <h1 className={`text-2xl md:text-5xl mb-2 font-black tracking-widest ${gs.phase===GamePhase.VICTORY ? (perf?'text-yellow-400 drop-shadow-[0_0_15px_gold]':'text-green-400 neon-blue'):'text-red-500 neon-red'}`}>
-                {gs.phase===GamePhase.VICTORY ? (perf?"PERFECT!!":"CLEAR") : "GAME OVER"}
-              </h1>
-              <div className="w-48 h-48 mb-6 border-4 bg-gray-900 overflow-hidden shrink-0"><img src={gs.phase===GamePhase.VICTORY?(perf?ASSETS.WIN_PERFECT:ASSETS.WIN_MISS):ASSETS.DEFEAT} className="w-full h-full object-cover"/></div>
-              <div className="bg-gray-900 border border-gray-700 p-4 rounded w-full mb-6 text-center">
-                <div className="text-gray-400">SCORE: <span className="text-white text-xl">{gs.score}</span></div>
-                <div className="text-gray-400">MISTAKES: <span className="text-red-400 text-xl">{gs.totalMistakes}</span></div>
-              </div>
-              <button onClick={start} className="py-3 px-8 bg-gray-800 text-white rounded border-2 border-cyan-500 font-bold flex gap-2"><RefreshCw size={20}/> RESTART</button>
-            </div>
-          </div>
-        );
-      }
-
-      return (
-        <div className={`fixed inset-0 h-[100dvh] bg-gray-900 flex flex-col scanlines overflow-hidden ${shake?'animate-[screen_shake_0.5s]':''}`}>
-          <div className="h-10 bg-black border-b border-gray-800 flex justify-between items-center px-4 z-20 shrink-0">
-            <div className="flex space-x-1">{[...Array(2)].map((_,i)=><Heart key={i} className={`w-6 h-6 ${i<gs.hp?'fill-red-500 text-red-500':'text-gray-800'}`}/>)}</div>
-            <div className="text-center font-bold text-cyan-400 text-lg">{gs.timeLeft.toString().padStart(2,'0')}</div>
-            <div className="text-right text-yellow-400 text-lg">{gs.score.toString().padStart(5,'0')}</div>
-          </div>
-          <div className="flex-1 flex flex-col relative w-full max-w-3xl mx-auto overflow-hidden">
-            <div className="relative flex-1 bg-gradient-to-b from-gray-900 to-black overflow-hidden p-1">
-              <MonsterDisplay state={mState} className="w-full h-full" />
-              {fb==='correct' && <div className="absolute inset-0 flex items-center justify-center z-30 pointer-events-none"><div className="text-5xl text-yellow-300 font-bold animate-ping">CRITICAL!</div></div>}
-              {(fb==='wrong'||fb==='timeout') && <div className="absolute inset-0 bg-red-500/20 z-30 animate-pulse pointer-events-none"/>}
-            </div>
-            <div className="bg-black border-t-2 border-cyan-900 p-1 pb-4 z-20 shrink-0">
-              <div className="text-center py-1 mb-1 bg-gray-900 rounded border border-gray-700 min-h-[44px] flex items-center justify-center">
-                 {curProb && <MathLabel latex={curProb.latex} className="text-lg text-white neon-blue" displayMode={true} />}
-              </div>
-              <div className="flex justify-center gap-2 mb-1">
-                 <div className="flex items-center gap-0.5">
-                     <span className="text-gray-400 text-sm"><MathLabel latex="r="/></span>
-                     <div onClick={()=>setActiveFld('r')} className={`h-9 w-16 bg-gray-800 border-2 rounded flex items-center justify-center text-lg ${activeFld==='r'?'border-cyan-400 text-white shadow-[0_0_10px_cyan]':'border-gray-600 text-gray-400'}`}>
-                        {inputR===''?<span className="animate-pulse text-gray-600">_</span>:<MathLabel latex={inputR}/>}
-                     </div>
-                 </div>
-                 <div className="flex items-center gap-0.5 bg-gray-900/50 p-0.5 rounded border border-gray-800">
-                     <span className="text-gray-400 text-sm"><MathLabel latex="\sin(\theta"/></span>
-                     <button onClick={()=>gs.phase===GamePhase.PLAYING && setInputOp(p=>p==='+'?'-':'+')} className="h-7 w-10 bg-gray-800 border-2 border-green-400 text-white rounded">
-                        {inputOp==='+'?<Plus size={16} className="mx-auto"/>:<Minus size={16} className="mx-auto"/>}
-                     </button>
-                     <div onClick={()=>setActiveFld('alpha')} className={`h-9 w-16 bg-gray-800 border-2 rounded flex items-center justify-center text-lg ${activeFld==='alpha'?'border-purple-400 text-white shadow-[0_0_10px_purple]':'border-gray-600 text-gray-400'}`}>
-                        {inputAlpha===''?<span className="animate-pulse text-gray-600">?</span>:<MathLabel latex={inputAlpha}/>}
-                     </div>
-                     <span className="text-gray-400 text-sm">)</span>
-                 </div>
-              </div>
-              <Keypad mode={activeFld} onPress={hPress} onDelete={hDel} onSubmit={checkAns} />
-            </div>
-          </div>
-          <style>{`@keyframes screen_shake { 10%, 90% { transform: translate(-1px, 0); } 20%, 80% { transform: translate(2px, 0); } 30%, 50%, 70% { transform: translate(-4px, 0); } 40%, 60% { transform: translate(4px, 0); } }`}</style>
-        </div>
-      );
+      document.querySelectorAll('.remove-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const id = e.currentTarget.getAttribute('data-id');
+          items = items.filter(i => i.id !== id);
+          renderApp();
+        });
+      });
     };
 
-    createRoot(document.getElementById('root')).render(<App />);
+    const toggleDecayUI = () => {
+      if (decayMode) {
+        decayToggleBg.className = "mt-1 relative inline-flex h-6 w-11 items-center rounded-full transition-colors bg-emerald-500";
+        decayToggleKnob.className = "inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform translate-x-6";
+      } else {
+        decayToggleBg.className = "mt-1 relative inline-flex h-6 w-11 items-center rounded-full transition-colors bg-slate-300";
+        decayToggleKnob.className = "inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform translate-x-1";
+      }
+    };
+
+    // UIの描画更新
+    const renderApp = () => {
+      renderRoulette();
+      renderSettingsList();
+      toggleDecayUI();
+    };
+
+    /* ==============================
+       アニメーション・機能ロジック
+       ============================== */
+    const hideResultModal = () => {
+      resultModalOverlay.classList.add('hidden-state-overlay');
+      resultModalContent.classList.add('hidden-state-content');
+    };
+
+    const showResultModal = (winner, probability) => {
+      resultName.textContent = winner.name;
+      resultName.style.textShadow = `0 0 15px ${winner.color}, 0 0 30px ${winner.color}`;
+      resultChance.textContent = `当選確率: ${probability.toFixed(1)}%`;
+      
+      resultModalOverlay.classList.remove('hidden-state-overlay');
+      resultModalContent.classList.remove('hidden-state-content');
+    };
+
+    const setSettingsModalOpen = (open) => {
+      if (open) {
+        settingsArea.classList.remove('pointer-events-none');
+        settingsBackdrop.classList.remove('hidden-state-overlay');
+        settingsModal.classList.remove('hidden-state-content');
+      } else {
+        settingsArea.classList.add('pointer-events-none');
+        settingsBackdrop.classList.add('hidden-state-overlay');
+        settingsModal.classList.add('hidden-state-content');
+      }
+    };
+
+    const executeSpin = () => {
+      if (isSpinning || getTotalWeight() <= 0) return;
+      
+      isSpinning = true;
+      hideResultModal();
+      setSettingsModalOpen(false); // 安全のため設定画面は閉じる
+      
+      const totalW = getTotalWeight();
+      const randomValue = Math.random() * totalW;
+
+      let accumulated = 0;
+      let winningItem = items[0];
+      let winStart = 0;
+      let winEnd = 0;
+      let probability = 0;
+
+      for (const item of items) {
+        if (randomValue >= accumulated && randomValue < accumulated + item.weight) {
+          winningItem = item;
+          probability = (item.weight / totalW) * 100;
+          winStart = (accumulated / totalW) * 360;
+          winEnd = ((accumulated + item.weight) / totalW) * 360;
+          break;
+        }
+        accumulated += item.weight;
+      }
+
+      // エッジを避けて少し内側を狙う
+      const padding = (winEnd - winStart) * 0.05;
+      const hitAngle = winStart + padding + Math.random() * ((winEnd - winStart) - 2 * padding);
+
+      // 上部（360度 or 0度）の位置に持ってくるための回転角
+      const baseRotation = 360 - hitAngle;
+      const currentSpins = Math.floor(rotation / 360);
+      const numSpins = 5 + Math.floor(Math.random() * 3); // 5〜7回転
+      const nextRotation = (currentSpins + numSpins) * 360 + baseRotation;
+
+      rotation = nextRotation;
+      rouletteContainer.style.transform = `rotate(${rotation}deg)`;
+
+      // CSSのtransition durationに合わせて5秒後に結果処理
+      setTimeout(() => {
+        isSpinning = false;
+        showResultModal(winningItem, probability);
+
+        // 【仕様 2】減衰モード適用
+        if (decayMode) {
+          items = items.map(i => {
+            if (i.id === winningItem.id) {
+              return { ...i, weight: Math.max(0, i.weight - 1) };
+            }
+            return i;
+          }).filter(i => i.weight > 0);
+          
+          // 裏で確率や盤面を再レンダリング
+          renderApp();
+        }
+      }, 5000);
+    };
+
+    /* ==============================
+       イベントリスナー設定
+       ============================== */
+    spinBtn.addEventListener('click', executeSpin);
+    spinAgainBtn.addEventListener('click', executeSpin);
+    closeResultBtn.addEventListener('click', hideResultModal);
+    
+    openSettingsBtn.addEventListener('click', () => {
+      if (!isSpinning) setSettingsModalOpen(true);
+    });
+    closeSettingsBtn.addEventListener('click', () => setSettingsModalOpen(false));
+    settingsBackdrop.addEventListener('click', () => setSettingsModalOpen(false));
+
+    decayToggleBtn.addEventListener('click', () => {
+      if (isSpinning) return;
+      decayMode = !decayMode;
+      toggleDecayUI();
+    });
+
+    addItemForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      if (isSpinning) return;
+      
+      const name = newItemName.value.trim();
+      const weight = parseInt(newItemWeight.value, 10);
+      
+      if (!name || isNaN(weight) || weight <= 0) return;
+
+      const nextColor = COLORS[items.length % COLORS.length];
+      items.push({ id: generateId(), name, weight, color: nextColor });
+      
+      newItemName.value = '';
+      newItemWeight.value = '10';
+      renderApp();
+      
+      // リストの一番下へスクロール
+      setTimeout(() => {
+        itemListContainer.scrollTop = itemListContainer.scrollHeight;
+      }, 50);
+    });
+
+    // 初期描画
+    renderApp();
+
+    // 背景画像などの読み込みを待ってルーレットの初期位置（CSSのリセット）を反映
+    requestAnimationFrame(() => {
+      rouletteContainer.style.transform = `rotate(0deg)`;
+    });
+
   </script>
 </body>
 </html>
